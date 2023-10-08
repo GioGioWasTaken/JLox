@@ -65,10 +65,42 @@ class Scanner {
             case '\n':
                 line++; // keep track of current line each time a new line is encountered.
                 break;
+
+            case '"': string(); break;
+
             default:
-                Lox.error(line, "Unexpected character detected."); // we notify the user about the error, and continue scanning for more errors.
+                if(isDigit(c)){
+                    number();
+                }
+                else if(isAlpha(c)){
+                    identifier();
+                }
+                else {
+                    Lox.error(line, "Unexpected character detected."); // we notify the user about the error, and continue scanning for more errors.
+                }
                 break;
+
         }
+    }
+
+    // boolean checks
+    private boolean isAlpha(char c) {
+        return c>='a' && c<='z' || c>='A' && c<='Z' ||  c == '_'; // we add the _ character since identifiers can also have _
+    }
+
+    private boolean isDigit(char c) {
+        return c >= '0' && c <= '9';
+    }
+
+    private boolean isAlphaNumeric(char c) {
+        return isAlpha(c) || isDigit(c);
+    }
+
+
+    // token related methods
+    private char peekNext() {
+        if (current + 1 >= source.length()) return '\0';
+        return source.charAt(current + 1);
     }
 
     private char advance() {
@@ -91,6 +123,74 @@ class Scanner {
         if (isAtEnd()) return '\0';
         return source.charAt(current); // if the current character is \n it will return it and the tokenizer will stop advancing
     }
+
+
+    // methods for literals
+
+    private void number() {
+        while (isDigit(peek())) advance();
+        // Look for a fractional part.
+        if (peek() == '.' && isDigit(peekNext())) {
+            // Consume the "."
+            advance();
+            while (isDigit(peek())) advance();
+        }
+        addToken(NUMBER, Double.parseDouble(source.substring(start, current))); // we use double type to represent numbers
+    }
+
+
+
+    private void string() {
+        while (peek() != '"' && !isAtEnd()) {
+            if (peek() == '\n') line++;
+            advance();
+        }
+        // Continue until the closing " is detected.
+        if (isAtEnd()) {
+            Lox.error(line, "Unterminated string.");
+            return;
+        } // if it's not detected, return an unterminated string error.
+
+        advance(); // once finished continue parsing characters...
+
+        // Trim the surrounding quotes. Start of the current token, all the way to the end of the current token.
+        // (Start is set to the point where the parsing for the current token was started, Line 20.)
+        String value = source.substring(start + 1, current - 1);
+        addToken(STRING, value);
+    }
+
+    private void identifier() {
+        while (isAlphaNumeric(peek())) advance();
+        String text = source.substring(start, current);
+        TokenType type = keywords.get(text); // get the value of the key
+        if (type == null) type = IDENTIFIER; // if it's not within these values, then it is an identifier.
+        addToken(type);
+    }
+
+    // keywords map
+
+    private static final Map<String, TokenType> keywords;
+    static {
+        keywords = new HashMap<>();
+        keywords.put("and", AND);
+        keywords.put("class", CLASS);
+        keywords.put("else", ELSE);
+        keywords.put("false", FALSE);
+        keywords.put("for", FOR);
+        keywords.put("fun", FUN);
+        keywords.put("if", IF);
+        keywords.put("nil", NIL);
+        keywords.put("or", OR);
+        keywords.put("print", PRINT);
+        keywords.put("return", RETURN);
+        keywords.put("super", SUPER);
+        keywords.put("this", THIS);
+        keywords.put("true", TRUE);
+        keywords.put("var", VAR);
+        keywords.put("while", WHILE);
+    }
+
+
 
 
 
