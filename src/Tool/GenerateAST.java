@@ -10,6 +10,7 @@ public class GenerateAST {
             System.err.println("Usage: generate_ast <output directory>");
             System.exit(64);
         }
+        System.out.println(args);
         String outputDir = args[0];
         defineAst(outputDir, "Expr", Arrays.asList(
                 "Binary : Expr left, Token operator, Expr right",
