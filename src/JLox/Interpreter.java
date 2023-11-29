@@ -1,38 +1,72 @@
 package JLox;
 
 public class Interpreter implements Expr.Visitor<Object> {
+    void interpret(Expr expression) {
+        try {
+            Object value = evaluate(expression);
+            System.out.println(stringify(value));
+        } catch (RuntimeError error) {
+            Lox.runtimeError(error);
+        }
+    }
+    String stringify (Object value){
+        if(value==null) return "nil"; //edgecase
+        if(value instanceof Double){
+            String text =value.toString();
+            if (text.endsWith(".0")) {
+                text = text.substring(0, text.length() - 2);
+                // e.g. 4.0 -> 4
+            }
+            return text;
+        }
+        return value.toString();
+        // all other values are calculated after dynamically determining the value of the Object
+    }
     @Override
     public Object visitBinaryExpr(Expr.Binary expr) {
         Object left = evaluate(expr.left);
         Object right = evaluate(expr.right);
         switch (expr.operator.type) {
             case GREATER:
+                checkNumberOperands(expr.operator, left, right);
                 return (double)left > (double)right;
             case GREATER_EQUAL:
+                checkNumberOperands(expr.operator, left, right);
                 return (double)left >= (double)right;
             case LESS:
+                checkNumberOperands(expr.operator, left, right);
                 return (double)left < (double)right;
             case LESS_EQUAL:
+                checkNumberOperands(expr.operator, left, right);
                 return (double)left <= (double)right;
             case BANG_EQUAL: return !isEqual(left, right);
             case EQUAL_EQUAL: return isEqual(left, right);
             case MINUS:
+                checkNumberOperands(expr.operator, left, right);
                 return (double)left - (double)right;
             case SLASH:
+                checkNumberOperands(expr.operator, left, right);
                 return (double)left / (double)right;
             case STAR:
+                checkNumberOperands(expr.operator, left, right);
                 return (double)left * (double)right;
             case PLUS:
-                if(left instanceof Integer && right instanceof Integer){
+                if(left instanceof Double && right instanceof Double){
                     return (double) left + (double) right;
                 }
                 if(left instanceof String && right instanceof String){
                     return (String) left + (String) right;
                 }
-                // otherwise we should return an error!
-                break;
+                throw new RuntimeError(expr.operator,"Operands must be two numbers or two strings.");
         }
         return null; // this code is unreachable.
+    }
+
+    private void checkNumberOperands(Token operator, Object left, Object right) {
+        if(left instanceof Double && right instanceof Double){
+            return;
+        }
+        throw new RuntimeError(operator, "Can't apply '" + operator +"' to non-number");
     }
 
     private boolean isEqual(Object a, Object b) {
@@ -59,10 +93,16 @@ public class Interpreter implements Expr.Visitor<Object> {
             case BANG:
                 return !isTruthy(right);
             case MINUS:
+                checkNumberOperand(expr.operator,right);
                 return -(double)right;
         }
         // Unreachable.
         return null;
+    }
+
+    private void checkNumberOperand(Token operator, Object operand) {
+        if(operand instanceof Double) return;
+        throw new RuntimeError(operator, "Operand must be a number.");
     }
 
     private Boolean isTruthy(Object object) {

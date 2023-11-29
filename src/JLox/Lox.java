@@ -8,6 +8,9 @@ import java.nio.file.Paths;
 import java.util.List;
 public class Lox {
     static boolean hadError = false; // Keep track of errors in the code
+    private static final Interpreter interpreter = new Interpreter();
+    // we want to use the same interpreter in a REPL session, not create a new one for each line.
+    static boolean hadRuntimeError = false;
     public static void main(String[] args) throws IOException {
         if (args.length > 1) {
             System.out.println("Usage: jlox [script]");
@@ -24,6 +27,7 @@ public class Lox {
         run(new String(bytes, Charset.defaultCharset()));
         // Indicate an error in the exit code.
         if (hadError) System.exit(65);
+        if (hadRuntimeError) System.exit(70);
     }
     private static void runPrompt() throws IOException{
         InputStreamReader input = new InputStreamReader(System.in);
@@ -43,7 +47,7 @@ public class Lox {
         Expr expression = parser.parse();
         // Stop if there was a syntax error.
         if (hadError) return;
-        System.out.println(new ASTPrinter().print(expression));
+        interpreter.interpret(expression);
     }
 
     static void error(int line, String message) {
@@ -61,6 +65,12 @@ public class Lox {
         } else {
             report(token.line, " at '" + token.lexeme + "'", message);
         }
+    }
+
+    static void runtimeError(RuntimeError error) {
+        System.err.println(error.getMessage() +
+                "\n[line " + error.token.line + "]"); //finally the line property is useful.
+        hadRuntimeError = true;
     }
 
 
