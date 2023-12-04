@@ -12,11 +12,9 @@ public class GenerateAST {
         }
         System.out.println(args);
         String outputDir = args[0];
-        defineAst(outputDir, "Expr", Arrays.asList(
-                "Binary : Expr left, Token operator, Expr right",
-                "Grouping : Expr expression",
-                "Literal : Object value",
-                "Unary : Token operator, Expr right"
+        defineAst("C:\\Users\\iyars\\IdeaProjects\\JLox\\src\\JLox", "Stmt", Arrays.asList(
+                "Expression : Expr expression",
+                "Print : Expr expression"
         ));
 
     }
